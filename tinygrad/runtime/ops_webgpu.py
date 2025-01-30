@@ -1,7 +1,7 @@
-import functools, struct
+import functools, struct, os
 from tinygrad.device import  Compiled, Allocator, Compiler
 from tinygrad.renderer.wgsl import WGSLRenderer
-from tinygrad.helpers import round_up
+from tinygrad.helpers import round_up, DEBUG
 import wgpu
 
 def create_uniform(wgpu_device, val) -> wgpu.GPUBuffer:
@@ -56,8 +56,17 @@ class WebGpuAllocator(Allocator):
 
 class WebGpuDevice(Compiled):
   def __init__(self, device:str):
+    limits = {}
+    try:
+      max_buffer_size = int(os.getenv("WEBGPU_MAX_BUFFER_SIZE"))
+      if max_buffer_size > 0:
+        if DEBUG >= 2:
+          print(f"setting webgpu limits.maxBufferSize={max_buffer_size}")
+        limits["maxBufferSize"] = max_buffer_size
+    except (ValueError, TypeError):
+      pass
     adapter = wgpu.gpu.request_adapter_sync(power_preference="high-performance")
     timestamp_supported = wgpu.FeatureName.timestamp_query in adapter.features
-    wgpu_device = adapter.request_device_sync(required_features=[wgpu.FeatureName.timestamp_query] if timestamp_supported else [])
+    wgpu_device = adapter.request_device_sync(required_features=[wgpu.FeatureName.timestamp_query] if timestamp_supported else [], required_limits=limits)
     super().__init__(device, WebGpuAllocator(wgpu_device), WGSLRenderer(), Compiler(),
                      functools.partial(WebGPUProgram, (wgpu_device, timestamp_supported)))
