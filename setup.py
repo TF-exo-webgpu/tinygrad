@@ -61,7 +61,6 @@ setup(name='tinygrad',
             "ggml-python",
             "capstone"
         ],
-        'webgpu': ["wgpu"],
         'docs': [
             "mkdocs",
             "mkdocs-material",
