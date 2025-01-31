@@ -57,3 +57,9 @@ comgr_*
 site/
 master_schedule.py
 profile_stats
+bin/
+lib64
+pyvenv.cfg
+lib/
+share/
+llama3-1b-model/
