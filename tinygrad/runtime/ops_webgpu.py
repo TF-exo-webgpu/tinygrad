@@ -54,17 +54,27 @@ class WebGpuAllocator(Allocator):
     buffer_data = self.dev.queue.read_buffer(src, 0)
     dest[:] = buffer_data[:dest.nbytes] if src._nbytes > dest.nbytes else buffer_data
 
-class WebGpuDevice(Compiled):
-  def __init__(self, device:str):
-    limits = {}
+def webgpu_envopts():
+  supported_opts = (
+      ("WEBGPU_MAX_BUFFER_SIZE", "maxBufferSize"),
+      ("WEBGPU_MAX_BUFFER_BINDING_SIZE", "maxStorageBufferBindingSize"),
+      #("WEBGPU_MAX_BUFFER_BINDING_SIZE", "maxUniformBufferBindingSize"),
+  )
+  limits = {}
+  for env, attr in supported_opts:
     try:
-      max_buffer_size = int(os.getenv("WEBGPU_MAX_BUFFER_SIZE"))
-      if max_buffer_size > 0:
+      value = int(os.getenv(env))
+      if value > 0:
         if DEBUG >= 2:
-          print(f"setting webgpu limits.maxBufferSize={max_buffer_size}")
-        limits["maxBufferSize"] = max_buffer_size
+          print(f"setting webgpu limits.{attr}={value}")
+        limits[attr] = value
     except (ValueError, TypeError):
       pass
+  return limits
+
+class WebGpuDevice(Compiled):
+  def __init__(self, device:str):
+    limits = webgpu_envopts()
     adapter = wgpu.gpu.request_adapter_sync(power_preference="high-performance")
     timestamp_supported = wgpu.FeatureName.timestamp_query in adapter.features
     wgpu_device = adapter.request_device_sync(required_features=[wgpu.FeatureName.timestamp_query] if timestamp_supported else [], required_limits=limits)
